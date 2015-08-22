@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# This simple Portable Batch System (PBS) script runs the UNIX hostname command
+# on a single node and sends the output to a file hostname.oXX, where XX is the
+# job number.  The comment lines beginning with PBS below specify job options;
+# these options can also be specified as command line flags.  Type "man qsub"
+# to see the complete list of available flags
+
+#PBS -N hostname
+#PBS -j oe
+#PBS -M bindel@cornell.edu
+
+hostname
+
