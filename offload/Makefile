@@ -1,3 +1,5 @@
+.PHONY: submit clean
+
 offload:
 	icc -o offload offload.c
 
