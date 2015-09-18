@@ -189,8 +189,8 @@ int main(int argc, char** argv)
     
     /* Output value, error bar, and elapsed time */
     t_elapsed = (t2.tv_sec-t1.tv_sec) + (t2.tv_usec-t1.tv_usec)/1.0e6;
-    printf("%d threads (pthreads): %g (%g): %e s\n", 
-           nthreads, EX, stdX, t_elapsed);
+    printf("%d threads (pthreads): %g (%g): %e s, %ld trials\n", 
+           nthreads, EX, stdX, t_elapsed, all_ntrials);
 
     return 0;
 }
