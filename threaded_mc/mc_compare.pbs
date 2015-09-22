@@ -1,0 +1,11 @@
+#!/bin/sh
+
+#PBS -N mc_compare
+#PBS -j oe
+#PBS -M your_net_id@cornell.edu
+
+cd $PBS_O_WORKDIR
+./pthread_mc.x -p 24 -t 1e-4 -b 10000 -n 10000000000
+./omp_mc.x           -t 1e-4 -b 10000 -n 10000000000
+./omp_offload_mc.x   -t 1e-4 -b 10000 -n 10000000000
+

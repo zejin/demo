@@ -53,7 +53,7 @@ int is_converged(double sum_X, double sum_X2, double ntrials,
     double EX  = sum_X / ntrials;
     double EX2 = sum_X2 / ntrials;
     double varX   = EX2-EX*EX;
-    return (varX/(EX*EX) < rtol*rtol || ntrials > maxtrials);
+    return (varX/(EX*EX)/ntrials < rtol*rtol || ntrials > maxtrials);
 }
 
 
@@ -107,6 +107,15 @@ void process_args(int argc, char** argv)
         fprintf(stderr, "No non-option arguments allowed\n");
         exit(-1);
     }
+}
+
+
+void print_params()
+{
+    printf("--- Run parameters:\n");
+    printf("rtol: %e\n", rtol);
+    printf("maxtrials: %ld\n", maxtrials);
+    printf("nbatch: %d\n", nbatch);
 }
 
 
@@ -182,8 +191,9 @@ int main(int argc, char** argv)
     
     /* Output value, error bar, and elapsed time */
     t_elapsed = t2-t1;
-    printf("%d threads (OpenMP):   %g (%g): %e s\n", 
-           nthreads, EX, stdX, t_elapsed);
+    print_params();
+    printf("%d threads (OpenMP): %g (%g): %e s, %ld trials\n", 
+           nthreads, EX, stdX, t_elapsed, all_ntrials);
 
     return 0;
 }

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#PBS -N omp_offload_mc
+#PBS -j oe
+#PBS -M your_net_id@cornell.edu
+
+cd $PBS_O_WORKDIR
+./omp_mc.x         -t 1e-8 -b 1000000 -n 1000000000
+./omp_offload_mc.x -t 1e-8 -b 1000000 -n 1000000000
+

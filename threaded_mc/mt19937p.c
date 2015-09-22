@@ -26,6 +26,8 @@
 /* When you use this, send an email to: matumoto@math.keio.ac.jp   */
 /* with an appropriate reference to your work.                     */
 
+#pragma offload_attribute(push,target(mic)) //{
+
 #include<stdio.h>
 #include "mt19937p.h"
 
@@ -97,3 +99,5 @@ genrand(struct mt19937p* config)
     return ( (double)y / (unsigned long)0xffffffff ); /* reals */
     /* return y; */ /* for integer generation */
 }
+
+#pragma offload_attribute(pop) //}

@@ -1,4 +1,4 @@
-/* pthreads_mc.c --
+/* omp_mc.c --
  *
  * This code is a prototype Monte Carlo computation (though right now
  * it simply computes the expected value of the uniform generator, which
@@ -20,7 +20,7 @@
  *     relatively inexpensive by only updating global counts after doing
  *     a large enough batch on each thread.
  *
- * 3.  Timing is done using the gettimeofday function, which returns the
+ * 3.  Timing is done using the omp_get_wtime function, which returns the
  *     wall clock time (as opposed to the CPU time for a particular
  *     process or thread).
  *
@@ -32,12 +32,14 @@
  * on two processors (as it should).
  */
 
+#pragma offload_attribute(push,target(mic)) //{
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <math.h>
 #include <sys/time.h>
+#include <omp.h>
 #include "mt19937p.h"
 
 
@@ -46,21 +48,14 @@ double rtol      = 1e-2;
 long   maxtrials = 1000000;
 int    nbatch    = 500;
 
-/* Monte Carlo results */
-double all_sum_X   = 0;
-double all_sum_X2  = 0;
-long   all_ntrials = 0;
 
-/* Lock on MC results */
-pthread_mutex_t counts_lock;
-
-
-int is_converged(double rtol, long maxtrials)
+int is_converged(double sum_X, double sum_X2, double ntrials, 
+                 double rtol, long maxtrials)
 {
-    double EX  = all_sum_X / all_ntrials;
-    double EX2 = all_sum_X2 / all_ntrials;
+    double EX  = sum_X / ntrials;
+    double EX2 = sum_X2 / ntrials;
     double varX   = EX2-EX*EX;
-    return (varX/(EX*EX)/all_ntrials < rtol*rtol || all_ntrials > maxtrials);
+    return (varX/(EX*EX)/ntrials < rtol*rtol || ntrials > maxtrials);
 }
 
 
@@ -71,53 +66,14 @@ double run_trial(struct mt19937p* mt)
     return X;
 }
 
+#pragma offload_attribute(pop) //}
 
-void* thread_main(void* arg)
+void process_args(int argc, char** argv)
 {
-    struct mt19937p mt;
-    long seed = (*(long*) arg);
-    const int tnbatch = nbatch;
-    int done_flag = 0;
-    sgenrand(seed, &mt);
-
-    do {
-
-        /* Run batch of experiments */
-        int t;
-        double sum_X = 0;
-        double sum_X2 = 0;
-        for (t = 0; t < tnbatch; ++t) {
-            double X = run_trial(&mt);
-            sum_X += X;
-            sum_X2 += X*X;
-        }
-
-        /* Update global counts and test for termination */
-        pthread_mutex_lock(&counts_lock);
-        done_flag = (done_flag || is_converged(rtol, maxtrials));
-        all_sum_X += sum_X;
-        all_sum_X2 += sum_X2;
-        all_ntrials += tnbatch;
-        done_flag = (done_flag || is_converged(rtol, maxtrials));
-        pthread_mutex_unlock(&counts_lock);
-
-    } while (!done_flag);
-    return NULL;
-}
-
-
-int process_args(int argc, char** argv)
-{
-    int nthreads = 1;
     int c;
     while ((c = getopt(argc, argv, "p:t:n:b:")) != -1) {
         switch (c) {
         case 'p':
-            nthreads = atoi(optarg);
-            if (nthreads <= 0 || nthreads > 32) {
-                fprintf(stderr, "nthreads must be in [1,32]\n");
-                exit(-1);
-            }
             break;
         case 't':
             rtol = atof(optarg);
@@ -154,7 +110,6 @@ int process_args(int argc, char** argv)
         fprintf(stderr, "No non-option arguments allowed\n");
         exit(-1);
     }
-    return nthreads;
 }
 
 
@@ -169,27 +124,70 @@ void print_params()
 
 int main(int argc, char** argv)
 {
-    int nthreads = process_args(argc, argv);
-    long seeds[32];
-    pthread_t threads[32];
-    int i;
+    int nthreads = -1;
     double EX, EX2, stdX, t_elapsed;
-    struct timeval t1, t2;
-    srandom(clock());
+    double t1, t2;
+    int i;
 
-    /* Run parallel experiments on nthreads threads */
-    gettimeofday(&t1, NULL);
-    pthread_mutex_init(&counts_lock, NULL);
-    for (i = 1; i < nthreads; ++i) {
-        seeds[i] = random();
-        pthread_create(&threads[i], NULL, thread_main, (void*)(seeds+i));
+    /* Monte Carlo results */
+    double all_sum_X   = 0;
+    double all_sum_X2  = 0;
+    long   all_ntrials = 0;
+
+    /* Private state */
+    struct mt19937p mt;
+    int done_flag;
+    int t, tid, tnbatch;
+    double sum_X, sum_X2;
+    long seed;
+
+    srandom(clock());
+    process_args(argc, argv);
+
+    t1 = omp_get_wtime();
+#pragma offload target(mic)
+#pragma omp parallel \
+    shared(all_sum_X, all_sum_X2, all_ntrials, nbatch)         \
+    private(mt, seed, done_flag, t, tid, sum_X, sum_X2)
+    {
+        nthreads = omp_get_max_threads();
+
+#pragma omp critical
+        seed = random();
+
+        tnbatch = nbatch;
+        tid = omp_get_thread_num();
+        sgenrand(seed, &mt);
+        done_flag = 0;
+        
+        do {
+            /* Run batch of experiments */
+            sum_X = 0;
+            sum_X2 = 0;
+            for (t = 0; t < tnbatch; ++t) {
+                double X = run_trial(&mt);
+                sum_X  += X;
+                sum_X2 += X*X;
+            }
+            
+            /* Update global counts and test for termination */
+#pragma omp critical 
+            {
+                done_flag = (done_flag || 
+                             is_converged(all_sum_X, all_sum_X2, all_ntrials,
+                                          rtol, maxtrials));
+                all_sum_X  += sum_X;
+                all_sum_X2 += sum_X2;
+                all_ntrials += tnbatch;
+                done_flag = (done_flag ||
+                             is_converged(all_sum_X, all_sum_X2, all_ntrials,
+                                          rtol, maxtrials));
+            }
+            
+        } while (!done_flag);
     }
-    seeds[0] = random();
-    thread_main((void*) &seeds);
-    for (i = 1; i < nthreads; ++i)
-        pthread_join(threads[i], NULL);
-    pthread_mutex_destroy(&counts_lock);
-    gettimeofday(&t2, NULL);
+
+    t2 = omp_get_wtime();
 
     /* Compute expected value and 1 sigma error bars */
     EX   = all_sum_X / all_ntrials;
@@ -197,9 +195,9 @@ int main(int argc, char** argv)
     stdX = sqrt((EX2-EX*EX) / all_ntrials);
     
     /* Output value, error bar, and elapsed time */
-    t_elapsed = (t2.tv_sec-t1.tv_sec) + (t2.tv_usec-t1.tv_usec)/1.0e6;
+    t_elapsed = t2-t1;
     print_params();
-    printf("%d threads (pthreads): %g (%g): %e s, %ld trials\n", 
+    printf("%d threads (OpenMP): %g (%g): %e s, %ld trials\n", 
            nthreads, EX, stdX, t_elapsed, all_ntrials);
 
     return 0;
