@@ -57,13 +57,16 @@ int main(int argc, char** argv)
     mc_param_t param;
     mc_result_t result;
     int nthreads = process_args(argc, argv, &param);
-    thread_param_t tparams[32];
-    pthread_t threads[32];
+    thread_param_t tparams[MAX_MC_THREADS];
+    pthread_t threads[MAX_MC_THREADS];
     int i;
     double EX, EX2, stdX, t_elapsed;
     struct timeval t1, t2;
     pthread_mutex_t counts_lock;
 
+    /* Use default nthreads */
+    if (nthreads == 0)
+        nthreads = 1;
     srandom(clock());
     mc_result_init(&result);
     pthread_mutex_init(&counts_lock, NULL);

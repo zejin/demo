@@ -3,6 +3,7 @@
 
 #include "mt19937p.h"
 
+#define MAX_MC_THREADS 255
 
 /* Parameters for termination criterion */
 typedef struct mc_param_t {

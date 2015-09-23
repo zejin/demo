@@ -49,9 +49,10 @@ int main(int argc, char** argv)
     long seed;
     int nthreads;
     srandom(clock());
-    nthreads = process_args(argc, argv, &param);
     mc_result_init(&result);
-    omp_set_num_threads(nthreads);
+    nthreads = process_args(argc, argv, &param);
+    if (nthreads == 0)
+        omp_set_num_threads(nthreads);
 
     t1 = omp_get_wtime();
     #pragma omp parallel shared(result, param, nthreads) private(seed)

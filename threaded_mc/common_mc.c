@@ -135,15 +135,15 @@ void print_results(mc_result_t* result)
 
 int process_args(int argc, char** argv, mc_param_t* param)
 {
-    int nthreads = 1;
+    int nthreads = 0;
     int c;
     mc_param_init(param);
     while ((c = getopt(argc, argv, "p:t:n:b:v:")) != -1) {
         switch (c) {
         case 'p':
             nthreads = atoi(optarg);
-            if (nthreads <= 0 || nthreads > 32) {
-                fprintf(stderr, "nthreads must be in [1,32]\n");
+            if (nthreads <= 0 || nthreads > MAX_MC_THREADS) {
+                fprintf(stderr, "nthreads must be in [1,%d]\n", MAX_MC_THREADS);
                 exit(-1);
             }
             break;
