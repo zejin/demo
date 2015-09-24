@@ -5,5 +5,8 @@
 #PBS -M your_net_id@cornell.edu
 
 cd $PBS_O_WORKDIR
+
+module load cs5220
+
 ./omp_mc.x -t 1e-4 -b 1000 -n 10000000
 

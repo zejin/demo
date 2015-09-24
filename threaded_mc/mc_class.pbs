@@ -5,6 +5,9 @@
 #PBS -M your_net_id@cornell.edu
 
 cd $PBS_O_WORKDIR
+
+module load cs5220
+
 ./pthread_mc.x -p 24 -t 1e-8 -b 10000 -n 10000000000
 ./pthread_mc.x -p 24 -t 1e-8 -b 20000 -n 10000000000
 ./pthread_mc.x -p 24 -t 1e-8 -b  5000 -n 10000000000
