@@ -7,8 +7,8 @@
 void ping(char* buf, int n, int ntrials, int p)
 {
     for (int i = 0; i < ntrials; ++i) {
-        MPI_Send(buf, n, MPI_CHAR, p, 0, MPI_COMM_WORLD);
-        MPI_Recv(buf, n, MPI_CHAR, p, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Send(buf, n, MPI_CHAR, p, i, MPI_COMM_WORLD);
+        MPI_Recv(buf, n, MPI_CHAR, p, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 }
 
@@ -16,8 +16,8 @@ void ping(char* buf, int n, int ntrials, int p)
 void pong(char* buf, int n, int ntrials, int p)
 {
     for (int i = 0; i < ntrials; ++i) {
-        MPI_Recv(buf, n, MPI_CHAR, p, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        MPI_Send(buf, n, MPI_CHAR, p, 0, MPI_COMM_WORLD);
+        MPI_Recv(buf, n, MPI_CHAR, p, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Send(buf, n, MPI_CHAR, p, i, MPI_COMM_WORLD);
     }
 }
 

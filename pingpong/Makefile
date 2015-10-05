@@ -4,7 +4,7 @@ CFLAGS=-std=gnu99 -Wall
 .PHONY: intel icc-openmpi gcc-openmpi clean
 
 ping.x: ping.c
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ 
 
 intel:
 	( module load cs5220 ; make CC=mpiicc )
