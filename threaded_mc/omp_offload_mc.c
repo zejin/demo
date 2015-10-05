@@ -55,7 +55,7 @@ int main(int argc, char** argv)
     mc_result_init(&result);
     nthreads = process_args(argc, argv, &param);
     if (nthreads == 0)
-        omp_set_num_threads(nthreads)
+        omp_set_num_threads(nthreads);
     
     t1 = omp_get_wtime();
     #pragma offload target(mic)

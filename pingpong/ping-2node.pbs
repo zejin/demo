@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#PBS -N ping-2node
+#PBS -j oe
+#PBS -l nodes=2:ppn=1
+
+module load cs5220
+cd $PBS_O_WORKDIR
+
+mpirun -n 2 ./ping.x 1
