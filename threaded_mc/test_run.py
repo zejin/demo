@@ -2,7 +2,7 @@ from subprocess import check_output
 
 
 def timing(b):
-    return float(check_output(["./omp_mc.x",
+    return float(check_output(["./omp_offload_mc.x",
                                "-b", "{0}".format(b),
                                "-v", "0"]))
 
