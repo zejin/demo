@@ -9,4 +9,6 @@ cd $PBS_O_WORKDIR
 module load cs5220
 
 ./omp_mc.x -t 1e-4 -b 1000 -n 10000000
+./omp_mc.x -t 1e-4 -b 2000 -n 10000000
+./omp_mc.x -t 1e-4 -b 500 -n 10000000
 
